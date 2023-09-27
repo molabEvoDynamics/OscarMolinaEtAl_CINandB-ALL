@@ -25,19 +25,13 @@
     time = 0+(1/dt):1/dt:simSteps; % Time vector (for plots)                            
     replicates = 10;            % number of replicates 
 
-    % NGS min = 28 max = 113
-    % MFISH min = 27 max = 84 
-    kar = 1:1:58; % possible karyotypes 
-    karEq = 23:1:96; % equivalence of kar to real karyotypes 
-    Nkar = length(kar); 
-    euploidKar = find( karEq == 46 );
-
-    %%%%%% initial condition %%%%%%%
-   totalCells = 10000; % Initial number of cells
-   chromosomes = 23;
+   %%%%%% initial condition %%%%%%%
+   
+   chromosomes = 23; 
    initialCellNumber = 500; 
+   totalCells = 10000; % Initial number of cells from which we'll sample
+                       % the 
                
-    % K = 5e9; %Carrying capacity
     % Carrying capacity for B-ALL cells
     K = 1e6; %[cells/L]
     
@@ -54,8 +48,9 @@
     rhomax     = 0.4;            % Maximum proliferation probability [day^-1]          
     M = 500 % Number of different phenotypes [M]
     % Growth rates 
-    rho_init = 0.2161
-    %rho_init = rhomin + (rhomax-rhomin).*rand(1,1);
+    % rho_init = 0.2161 % fixed
+     rho_init = normrnd(0.21,0.001); % Sample from a normal distribution
+    % rho_init = rhomin + (rhomax-rhomin).*rand(1,1);
 
 % CIN = probability of missegregation
 %     probCIN  = ones(1,length(rho))*0.5*(1/dt);   % Gamma [days^-1]. 
@@ -98,7 +93,7 @@
     basicNumberOfCopies = 2; 
     chromosomes = 23;
 
-    % Selection strength (sigma) 
+    % Selection strength / selection coefficient (sigma) 
     sigma = 0.5; 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%

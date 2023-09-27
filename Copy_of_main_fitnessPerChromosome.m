@@ -34,7 +34,8 @@ for m = 1:replicates
 
         
  %-------------------PROOF OF CONCEPT ------------------------------------%       
-        
+% Starting with an aneuploid cell population sampled from a normal distribution
+% 
 %         initialKaryotypes = zeros( totalCells, chromosomes); 
 %         
 %         % Initial cells are distributed across phenotypes with a
@@ -65,6 +66,8 @@ for m = 1:replicates
 
 %--------------------DATA FROM PATIENTS (NGS) -------------------------%
 % % CHOOSE PATIENT
+% Modal karyotypes, considering the standard deviation from patients'
+% karyotype
 % mean_pat_kar = hyperD_hd53_mean; 
 % sd_pat_kar = hyperD_hd53_sd; 
 
@@ -74,19 +77,20 @@ for m = 1:replicates
 %         allPositiveRows = all(initialOut_p>0, 2);
 %         initialOut_p = initialOut_p(allPositiveRows, :); 
 %         initialOut_p = initialOut_p';
-% 
-%          hd53 = [2 2 2 3 2 3 3 3 2 3 2 2 2 4 2 2 3 3 2 2 4 3 3];
-%          initKaryotypes = repmat(hd53', 1, initialCellNumber);
-%  
-         bescam = [1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 1 2 1 1 2 1 2];
-         initKaryotypes = repmat(bescam', 1, initialCellNumber);
-  
+%        Fixed initial karyotypes from patients (clonal population)
+         % Hyperdiploid 
+         hd53 = [2 2 2 3 2 3 3 3 2 3 2 2 2 4 2 2 3 3 2 2 4 3 3];
+         initKaryotypes = repmat(hd53', 1, initialCellNumber);
+%        % Near haploid (not endoreduplicated clone)
+%          bescam = [1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 1 2 1 1 2 1 2];
+%          initKaryotypes = repmat(bescam', 1, initialCellNumber);
+ 
         % aneuploid initial condition
          % aneuploidExample = [2 2 2 2 2 2 2 2 2 3 2 2 2 2 2 2 2 3 2 2 2 2 2];
          % initKaryotypes = repmat(aneuploidExample', 1, initialCellNumber);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %          START SIMULATION           %
+        %          START SIMULATIONS          %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         cells(:, 1:initialCellNumber) = initKaryotypes;
@@ -98,19 +102,17 @@ for m = 1:replicates
 
 
         % find the fitness for the initial karyotypes
-        euploid = 2*ones(size(cells));
-        fitness = abs(sum((initKaryotypes-euploid).*fitness_hybrid,1));
-        % if we are normalising by the total karyotype, we don't need to 
-        % do it relative to euploids
-        %fitness = abs(sum((initKaryotypes).*fitness_hybrid,1));
+       
+        fitness = abs(sum((initKaryotypes).*fitness_hybrid,1));
         hist_fitness(1:initialCellNumber, 1) = fitness; 
 
         rho_average(1,m) = rho_init; 
 
         for s=2:up_simSteps % Number of time steps   
+           
             % 1. Proliferation stage
 %             % find the fitness for each karyotype
-%                 fitness = sum(cells.*fitness_hybrid,1);
+                 fitness = sum(cells.*fitness_hybrid,1);
 %             % 1a. Fitness threshold;
 %                 % set a fitness threshold which determines if cells divide
 %                 % or not
@@ -118,16 +120,6 @@ for m = 1:replicates
 %                 % get newborn indexes 
 %                 dividing = find(fitness < fitnessThreshold);           
 
-
-%            % 1b. Fitness modulates growth rate. 
-           % NO TIENE MUCHO SENTIDO PORQUE SOLO VA A ACTUAR
-%            % MIENTRAS N < 1000
-%              N = length(fitness);
-%              fitness = sum(cells.*fitness_hybrid,1);
-%              rhoVector = (rho_basal./fitness)';%*(1-N/K);
-%              
-%              newborn = rhoVector-(rand(N,1)/2);
-%              dividing = find(newborn > 0);
             % 1c. Matriz de diferencias
              N = length(fitness); % find total population
 
@@ -154,7 +146,7 @@ for m = 1:replicates
 %             dividing = randperm(length(cells_f2), newborn);
 
 %             %MIXED MODEL
-%             % Select 33% with max FITNESS
+%             % Select newborns between SIGMA % with max FITNESS
 %             [maxFitness30, dividingCandidates] = maxk(cells_f2, round(sigma*length(cells_f2)));
 %             dividingCandidatesLength = length(dividingCandidates);
 %             dividingPositions = randperm(dividingCandidatesLength, newborn);
@@ -208,36 +200,36 @@ for m = 1:replicates
             if cinCells ~= 0
 
            changingCells = randperm(dividingN,cinCells); % which cells of the newborn will undergoCIN
-% % %                 %------ LIMITING LAGGING CHROMOSOMES (1-4 MAX)-------%
-                % initiate the empty matrix
-                extracopies2 = zeros(23, cinCells);
-                whichLaggingChr = zeros(23,1);
-
-                for p = 1:cinCells
-                    % Iterate over cinCells
-                    % Choose a random number (K) between 1 and 3. Setting 3 as the
-                    % maximum possible number of lagging chromosomes 
-                    nLaggingChr = randi([1 4]);
-    
-                    % Choose K numbers between 1 and 23 to see which
-                    % chromosomes are acquiring extra copies
-                    whichLaggingChr = fix(1+(23-1).*rand(nLaggingChr,1));
-
-                    % Fill the matrix in the corresponding positions 
-                    extracopies2(whichLaggingChr, 1) = 1;
-                end 
-
-                % Update daughter2
-                daughter2 = cells(:,dividing); % we extract all the cells that are dividing
-                % then we can update daughter1 which underwent CIN 
-                % in matrix of karyotypes
-                daughter1 = dividing(changingCells);
-                cells(:,daughter1) = cells(:,daughter1)+extracopies2;
-
-                % We need to substract the extracopies from one of the
-                % daughter cells
-                daughter2(:,changingCells) = daughter2(:,changingCells) - extracopies2; 
-% %                 %------ LIMITING LAGGING CHROMOSOMES (1-4) -------%
+% % % %                 %------ LIMITING LAGGING CHROMOSOMES (1-4 MAX)-------%
+%                 % initiate the empty matrix
+%                 extracopies2 = zeros(23, cinCells);
+%                 whichLaggingChr = zeros(23,1);
+% 
+%                 for p = 1:cinCells
+%                     % Iterate over cinCells
+%                     % Choose a random number (K) between 1 and 3. Setting 3 as the
+%                     % maximum possible number of lagging chromosomes 
+%                     nLaggingChr = randi([1 4]);
+%     
+%                     % Choose K numbers between 1 and 23 to see which
+%                     % chromosomes are acquiring extra copies
+%                     whichLaggingChr = fix(1+(23-1).*rand(nLaggingChr,1));
+% 
+%                     % Fill the matrix in the corresponding positions 
+%                     extracopies2(whichLaggingChr, 1) = 1;
+%                 end 
+% 
+%                 % Update daughter2
+%                 daughter2 = cells(:,dividing); % we extract all the cells that are dividing
+%                 % then we can update daughter1 which underwent CIN 
+%                 % in matrix of karyotypes
+%                 daughter1 = dividing(changingCells);
+%                 cells(:,daughter1) = cells(:,daughter1)+extracopies2;
+% 
+%                 % We need to substract the extracopies from one of the
+%                 % daughter cells
+%                 daughter2(:,changingCells) = daughter2(:,changingCells) - extracopies2; 
+% % %                 %------ LIMITING LAGGING CHROMOSOMES (1-4) -------%
 
 % %                 %------ LIMITING LAGGING CHROMOSOMES (1 MAX)-------%
 %                 % initiate the empty matrix
@@ -270,24 +262,24 @@ for m = 1:replicates
 
 
 % 
-% %                 %------ UNLIMITED LAGGING CHROMOSOMES ------%
-%                 extracopies = randi([0 1], 23, cinCells); % matrix of extracopies (gains)
-%                 copyLosses = randperm(numel(extracopies), floor(numel(extracopies)/3)); %losses
-%                 extracopies(copyLosses) = -1;
-% 
-% 
-%                 % if a cell missegregates, its sister cell must lose or
-%                 % gain the counterpart chromosome copies
-%                 daughter2 = cells(:,dividing); % we extract all the cells that are dividing
-%                 % then we can update daughter1 which underwent CIN 
-%                 % in matrix of karyotypes
-%                 daughter1 = dividing(changingCells);
-%                 cells(:,daughter1) = cells(:,daughter1)+extracopies;
-% 
-%                 % We need to substract the extracopies from one of the
-%                 % daughter cells
-%                 daughter2(:,changingCells) = daughter2(:,changingCells) - extracopies;
-% %                 %------ UNLIMITED LAGGING CHROMOSOMES ------%   
+%                 %------ UNLIMITED LAGGING CHROMOSOMES ------%
+                extracopies = randi([0 1], 23, cinCells); % matrix of extracopies (gains)
+                copyLosses = randperm(numel(extracopies), floor(numel(extracopies)/3)); %losses
+                extracopies(copyLosses) = -1;
+
+
+                % if a cell missegregates, its sister cell must lose or
+                % gain the counterpart chromosome copies
+                daughter2 = cells(:,dividing); % we extract all the cells that are dividing
+                % then we can update daughter1 which underwent CIN 
+                % in matrix of karyotypes
+                daughter1 = dividing(changingCells);
+                cells(:,daughter1) = cells(:,daughter1)+extracopies;
+
+                % We need to substract the extracopies from one of the
+                % daughter cells
+                daughter2(:,changingCells) = daughter2(:,changingCells) - extracopies;
+%                 %------ UNLIMITED LAGGING CHROMOSOMES ------%   
 
                 % update population matrix. We incorporate daugther cells
                 % matrices
@@ -331,21 +323,21 @@ for m = 1:replicates
                 % karyotype
             %fitness = sum(cells.*fitness_hybrid,1)./net_karyotypes_s; 
         disp(s)
-        
-    %         if ismember(s, saveKaryotypes) == 1
-    %             for k = 1:length(saveKaryotypes)
-    %                 position_k = find(saveKaryotypes == k) 
-    %                 cells_karyotype(:,1:size(cells,2), position_k, m) = cells;
-    %                 hist_fitness(1:size(cells,2),s,position_k, m) = fitness'; 
-    %             end 
-    %         end
+            % Save only    
+            %         if ismember(s, saveKaryotypes) == 1
+            %             for k = 1:length(saveKaryotypes)
+            %                 position_k = find(saveKaryotypes == k) 
+            %                 cells_karyotype(:,1:size(cells,2), position_k, m) = cells;
+            %                 hist_fitness(1:size(cells,2),s,position_k, m) = fitness'; 
+            %             end 
+            %         end
            
            hist_fitness(1:size(cells,2),s,m) = fitness';
            if size(cells,2) >= 10000
             saveCellsSubset = floor(1 + (size(cells,2)-1) .* rand(10000,1));   
             cells_karyotype(:,:, s,  m) = cells(:,saveCellsSubset);
            end 
-           %rho_average(s,m) = mean(rhoVector);
+           
           
            fitness_average_norm(s,m) = mean(cells_f2, 'omitnan');
            fitness_average(s,m) = mean(fitness); 
@@ -364,20 +356,7 @@ for m = 1:replicates
 end        
 
 run( 'plots_fitnessPerChromosome.m')
-
-      
-%filename = 'rhoaverage_testdata_replicates_constantMu_DescRho.xlsx';
-%writematrix(rho_average,filename,'Sheet',1,'Range','A1', 'Sheet', 5)
-
-% load chirp
-% sound(y,Fs)
-
-% Process the resulting files 
-% run( 'dataProc.m' )
-% 
-% % Plot the results 
-% run( 'plots.m'  )
-%  
+ 
 toc;
 
 
