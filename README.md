@@ -5,5 +5,5 @@ This repository contains the code files which have been partially used to genera
 - `parameters.m`: script containing the information about all relevant parameters, including growth rate, death rate, probability of missegregation per mitotic event, probability of undergoing whole genome duplication and more. 
 - `binormal.m`: normal approximation to binomial distribution.
 - `exportingData.m` and `plots_fitnessPerChromosome.m` are auxiliar files to export data and generate some exploratory plots.
-- 'Main_fitnessPerChromosome.m` is the core file to conduct the simulations.
+- `Main_fitnessPerChromosome.m` is the core file to conduct the simulations.
 
